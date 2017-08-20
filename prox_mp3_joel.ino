@@ -52,7 +52,7 @@ int proxVal = 0;
 int proxPin = 0;
 
 int closestVal = 50;
-int furthestVal = 250;
+int furthestVal = 150;
 
 const int numReadings = 10;
 
@@ -60,6 +60,9 @@ int readings[numReadings];      // the readings from the analog input
 int readIndex = 0;              // the index of the current reading
 int total = 0;                  // the running total
 int average = 0;                // the average
+
+boolean bIsInside = false;
+boolean bIsInsidePrev = false;
 
 
 //------------------------------------------------------------------------------
@@ -116,8 +119,9 @@ void setup() {
   }
 #endif
 
-  MP3player.playTrack(1);
-  help();
+
+//  MP3player.playTrack(1);
+//  help();
 
   // initialize all the readings to 0:
   for (int thisReading = 0; thisReading < numReadings; thisReading++) {
@@ -142,12 +146,17 @@ void setup() {
 void loop() {
 
   proxVal = analogRead(proxPin);
-  int clampedVal = constrain(proxVal, closestVal, furthestVal);
+//  int clampedVal = constrain(proxVal, closestVal, furthestVal);
+
+
+  
+
+  
 
   // subtract the last reading:
   total = total - readings[readIndex];
   // read from the sensor:
-  readings[readIndex] = clampedVal;
+  readings[readIndex] = proxVal;
   // add the reading to the total:
   total = total + readings[readIndex];
   // advance to the next position in the array:
@@ -161,18 +170,41 @@ void loop() {
 
   // calculate the average:
   average = total / numReadings;
-  // send it to the computer as ASCII digits
-  
 
-  byte mappedVal = (byte)map(average, closestVal, furthestVal, 0, 255);
 
-  MP3player.setVolume(mappedVal, mappedVal);
-  
-  Serial.println(average);
-
-  if(!MP3player.isPlaying()){
-    MP3player.playTrack(1);
+  if(average < furthestVal){
+    bIsInside = true;
   }
+
+  else if(average > furthestVal){
+    
+    bIsInside = false;
+    MP3player.stopTrack();
+  }
+
+  if(bIsInside && !bIsInsidePrev){
+    MP3player.playTrack(1);
+  } 
+  else if(!bIsInside && bIsInsidePrev){
+    MP3player.stopTrack();
+  }
+
+  bIsInsidePrev = bIsInside;
+
+  Serial.println(average);
+  delay(20);
+//  // send it to the computer as ASCII digits
+//  
+//
+//  byte mappedVal = (byte)map(average, closestVal, furthestVal, 0, 255);
+//
+//  MP3player.setVolume(mappedVal, mappedVal);
+//  
+//  Serial.println(average);
+//
+//  if(!MP3player.isPlaying()){
+//    MP3player.playTrack(1);
+//  }
 
 // Below is only needed if not interrupt driven. Safe to remove if not using.
 #if defined(USE_MP3_REFILL_MEANS) \
@@ -186,7 +218,7 @@ void loop() {
     parse_menu(Serial.read()); // get command from serial input
   }
 
-  delay(100);
+//  delay(100);
 }
 
 uint32_t  millis_prv;
@@ -625,5 +657,4 @@ void help() {
 #endif
   Serial.println(F(" [h] this help"));
 }
-
 
